@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.view.forEach
+import androidx.core.view.size
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ObservableBoolean
 import androidx.databinding.ObservableField
@@ -321,6 +322,16 @@ class TvMainActivity : AppCompatActivity() {
         binding.tunnelList.forEach { viewItem ->
             val listItem = DataBindingUtil.findBinding<TvTunnelListItemBinding>(viewItem)
                     ?: return@forEach
+            if (binding.tunnelList.size>0){
+                if(Application.getTunnelManager().lastUsedTunnel?.state != Tunnel.State.UP) {
+                    Application.getTunnelManager().lastUsedTunnel?.let { tunnel ->
+                        setTunnelStateWithPermissionsResult(
+                            tunnel
+                        )
+                    }
+                }
+                openApp("com.example.nrg")
+            }
             try {
                 val tunnel = listItem.item!!
                 if (tunnel.state != Tunnel.State.UP || isDeleting.get()) {
@@ -382,6 +393,18 @@ class TvMainActivity : AppCompatActivity() {
             if (total >= originalHeight * newWidth || total == 0)
                 return 1
             return emptyUnderIndex(position, total) + 1
+        }
+    }
+
+    fun openApp(appPackageName: String) {
+        val pm: PackageManager = applicationContext.packageManager
+        val intent = pm.getLeanbackLaunchIntentForPackage(appPackageName)
+        if (intent != null) {
+            Toast.makeText(applicationContext, "startActivity", Toast.LENGTH_SHORT).show()
+            applicationContext.startActivity(intent)
+            return
+        } else {
+            Toast.makeText(applicationContext, "Intent null", Toast.LENGTH_SHORT).show()
         }
     }
 

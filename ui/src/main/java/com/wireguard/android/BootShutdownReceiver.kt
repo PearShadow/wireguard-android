@@ -8,12 +8,18 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.wireguard.android.activity.TvMainActivity
 import com.wireguard.android.backend.WgQuickBackend
 import com.wireguard.android.util.applicationScope
 import kotlinx.coroutines.launch
 
 class BootShutdownReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+            val i = Intent(context, TvMainActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(i)
+        }
         applicationScope.launch {
             if (Application.getBackend() !is WgQuickBackend) return@launch
             val action = intent.action ?: return@launch
