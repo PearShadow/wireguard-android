@@ -102,9 +102,7 @@
         </receiver>
 
         <receiver
-            android:name=".model.TunnelManager$IntentReceiver"
-            android:enabled="true"
-            android:exported="true">
+            android:name=".model.TunnelManager$IntentReceiver">
             <intent-filter>
                 <action android:name="com.wireguard.android.action.REFRESH_TUNNEL_STATES" />
                 <action android:name="com.wireguard.android.action.SET_TUNNEL_UP" />
