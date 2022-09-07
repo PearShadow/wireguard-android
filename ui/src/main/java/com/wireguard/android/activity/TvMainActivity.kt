@@ -59,13 +59,12 @@ class TvMainActivity : AppCompatActivity() {
             }
         }
     private var pendingTunnel: ObservableTunnel? = null
-    private val permissionActivityResultLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            val tunnel = pendingTunnel
-            if (tunnel != null)
-                setTunnelStateWithPermissionsResult(tunnel)
-            pendingTunnel = null
-        }
+    private val permissionActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val tunnel = pendingTunnel
+        if (tunnel != null)
+            setTunnelStateWithPermissionsResult(tunnel)
+        pendingTunnel = null
+    }
 
     private fun setTunnelStateWithPermissionsResult(tunnel: ObservableTunnel) {
         lifecycleScope.launch {
@@ -74,9 +73,9 @@ class TvMainActivity : AppCompatActivity() {
             } catch (e: Throwable) {
                 val error = ErrorMessages[e]
                 val message = getString(R.string.error_up, error)
-                Toast.makeText(this@TvMainActivity, message, Toast.LENGTH_LONG).show()
                 Log.e(TAG, message, e)
             }
+            autoConnectToVpn()
             updateStats()
         }
     }
@@ -101,13 +100,8 @@ class TvMainActivity : AppCompatActivity() {
         binding.filesRoot = filesRoot
         val gridManager = binding.tunnelList.layoutManager as GridLayoutManager
         gridManager.spanSizeLookup = SlatedSpanSizeLookup(gridManager)
-        binding.tunnelRowConfigurationHandler = object :
-            ObservableKeyedRecyclerViewAdapter.RowConfigurationHandler<TvTunnelListItemBinding, ObservableTunnel> {
-            override fun onConfigureRow(
-                binding: TvTunnelListItemBinding,
-                item: ObservableTunnel,
-                position: Int
-            ) {
+        binding.tunnelRowConfigurationHandler = object : ObservableKeyedRecyclerViewAdapter.RowConfigurationHandler<TvTunnelListItemBinding, ObservableTunnel> {
+            override fun onConfigureRow(binding: TvTunnelListItemBinding, item: ObservableTunnel, position: Int) {
                 binding.isDeleting = isDeleting
                 binding.isFocused = ObservableBoolean()
                 binding.root.setOnFocusChangeListener { _, focused ->
@@ -123,8 +117,7 @@ class TvMainActivity : AppCompatActivity() {
                             } catch (e: Throwable) {
                                 val error = ErrorMessages[e]
                                 val message = getString(R.string.config_delete_error, error)
-                                Toast.makeText(this@TvMainActivity, message, Toast.LENGTH_LONG)
-                                    .show()
+                                Toast.makeText(this@TvMainActivity, message, Toast.LENGTH_LONG).show()
                                 Log.e(TAG, message, e)
                             }
                         } else {
@@ -143,13 +136,8 @@ class TvMainActivity : AppCompatActivity() {
             }
         }
 
-        binding.filesRowConfigurationHandler = object :
-            ObservableKeyedRecyclerViewAdapter.RowConfigurationHandler<TvFileListItemBinding, KeyedFile> {
-            override fun onConfigureRow(
-                binding: TvFileListItemBinding,
-                item: KeyedFile,
-                position: Int
-            ) {
+        binding.filesRowConfigurationHandler = object : ObservableKeyedRecyclerViewAdapter.RowConfigurationHandler<TvFileListItemBinding, KeyedFile> {
+            override fun onConfigureRow(binding: TvFileListItemBinding, item: KeyedFile, position: Int) {
                 binding.root.setOnClickListener {
                     if (item.file.isDirectory)
                         navigateTo(item.file)
@@ -188,11 +176,7 @@ class TvMainActivity : AppCompatActivity() {
                 try {
                     tunnelFileImportResultLauncher.launch("*/*")
                 } catch (_: Throwable) {
-                    Toast.makeText(
-                        this@TvMainActivity,
-                        getString(R.string.tv_no_file_picker),
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(this@TvMainActivity, getString(R.string.tv_no_file_picker), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -215,13 +199,12 @@ class TvMainActivity : AppCompatActivity() {
     }
 
     private var pendingNavigation: File? = null
-    private val permissionRequestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            val to = pendingNavigation
-            if (it && to != null)
-                navigateTo(to)
-            pendingNavigation = null
-        }
+    private val permissionRequestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        val to = pendingNavigation
+        if (it && to != null)
+            navigateTo(to)
+        pendingNavigation = null
+    }
 
     private var cachedRoots: Collection<KeyedFile>? = null
 
@@ -232,17 +215,9 @@ class TvMainActivity : AppCompatActivity() {
             val storageManager: StorageManager = getSystemService() ?: return@withContext list
             list.addAll(storageManager.storageVolumes.mapNotNull { volume ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    volume.directory?.let {
-                        KeyedFile(
-                            it,
-                            volume.getDescription(this@TvMainActivity)
-                        )
-                    }
+                    volume.directory?.let { KeyedFile(it, volume.getDescription(this@TvMainActivity)) }
                 } else {
-                    KeyedFile(
-                        (StorageVolume::class.java.getMethod("getPathFile").invoke(volume) as File),
-                        volume.getDescription(this@TvMainActivity)
-                    )
+                    KeyedFile((StorageVolume::class.java.getMethod("getPathFile").invoke(volume) as File), volume.getDescription(this@TvMainActivity))
                 }
             })
         } else {
@@ -277,11 +252,7 @@ class TvMainActivity : AppCompatActivity() {
     private fun navigateTo(directory: File) {
         require(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             pendingNavigation = directory
             permissionRequestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
             return
@@ -348,20 +319,31 @@ class TvMainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun updateStats() {
-        binding.tunnelList.forEach { viewItem ->
-            val listItem = DataBindingUtil.findBinding<TvTunnelListItemBinding>(viewItem)
-                ?: return@forEach
-            if (binding.tunnelList.size > 0) {
-                if (Application.getTunnelManager().lastUsedTunnel?.state != Tunnel.State.UP) {
-                    Application.getTunnelManager().lastUsedTunnel?.let { tunnel ->
-                        setTunnelStateWithPermissionsResult(
-                            tunnel
-                        )
-                    }
+    suspend fun autoConnectToVpn() {
+        if (binding.tunnelList.size > 0) {
+            if (Application.getTunnelManager().lastUsedTunnel?.state != Tunnel.State.UP) {
+                Application.getTunnelManager().lastUsedTunnel?.let { tunnel ->
+                    setTunnelStateWithPermissionsResult(
+                        tunnel
+                    )
+                } ?: run {
+                    setTunnelStateWithPermissionsResult(
+                        Application.getTunnelManager().getTunnels().get(0)
+                    )
                 }
+            } else if (Application.getTunnelManager().lastUsedTunnel?.state == Tunnel.State.UP) {
                 openApp("com.example.nrg")
             }
+        }
+    }
+
+    private suspend fun updateStats() {
+        binding.tunnelList.forEach { viewItem ->
+            if (binding.tunnelList.indexOfChild(viewItem) == 0) {
+                autoConnectToVpn()
+            }
+            val listItem = DataBindingUtil.findBinding<TvTunnelListItemBinding>(viewItem)
+                ?: return@forEach
             try {
                 val tunnel = listItem.item!!
                 if (tunnel.state != Tunnel.State.UP || isDeleting.get()) {
@@ -388,8 +370,7 @@ class TvMainActivity : AppCompatActivity() {
             get() = forcedKey ?: if (file.isDirectory) "${file.name}/" else file.name
     }
 
-    private class SlatedSpanSizeLookup(private val gridManager: GridLayoutManager) :
-        SpanSizeLookup() {
+    private class SlatedSpanSizeLookup(private val gridManager: GridLayoutManager) : SpanSizeLookup() {
         private val originalHeight = gridManager.spanCount
         private var newWidth = 0
         private lateinit var sizeMap: Array<IntArray?>
@@ -435,11 +416,8 @@ class TvMainActivity : AppCompatActivity() {
         val pm: PackageManager = applicationContext.packageManager
         val intent = pm.getLeanbackLaunchIntentForPackage(appPackageName)
         if (intent != null) {
-            Toast.makeText(applicationContext, "startActivity", Toast.LENGTH_SHORT).show()
             applicationContext.startActivity(intent)
             return
-        } else {
-            Toast.makeText(applicationContext, "Intent null", Toast.LENGTH_SHORT).show()
         }
     }
 
