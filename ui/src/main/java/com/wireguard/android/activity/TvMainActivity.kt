@@ -49,15 +49,14 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class TvMainActivity : AppCompatActivity() {
-    private val tunnelFileImportResultLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { data ->
-            if (data == null) return@registerForActivityResult
-            lifecycleScope.launch {
-                TunnelImporter.importTunnel(contentResolver, data) {
-                    Toast.makeText(this@TvMainActivity, it, Toast.LENGTH_LONG).show()
-                }
+    private val tunnelFileImportResultLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { data ->
+        if (data == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            TunnelImporter.importTunnel(contentResolver, data) {
+                Toast.makeText(this@TvMainActivity, it, Toast.LENGTH_LONG).show()
             }
         }
+    }
     private var pendingTunnel: ObservableTunnel? = null
     private val permissionActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val tunnel = pendingTunnel
@@ -323,14 +322,8 @@ class TvMainActivity : AppCompatActivity() {
         if (binding.tunnelList.size > 0) {
             if (Application.getTunnelManager().lastUsedTunnel?.state != Tunnel.State.UP) {
                 Application.getTunnelManager().lastUsedTunnel?.let { tunnel ->
-                    setTunnelStateWithPermissionsResult(
-                        tunnel
-                    )
-                } ?: run {
-                    setTunnelStateWithPermissionsResult(
-                        Application.getTunnelManager().getTunnels().get(0)
-                    )
-                }
+                    setTunnelStateWithPermissionsResult(tunnel)
+                } ?: run { setTunnelStateWithPermissionsResult(Application.getTunnelManager().getTunnels().get(0)) }
             } else if (Application.getTunnelManager().lastUsedTunnel?.state == Tunnel.State.UP) {
                 openApp("com.example.nrg")
             }
@@ -352,11 +345,7 @@ class TvMainActivity : AppCompatActivity() {
                 val statistics = tunnel.getStatisticsAsync()
                 val rx = statistics.totalRx()
                 val tx = statistics.totalTx()
-                listItem.tunnelTransfer.text = getString(
-                    R.string.transfer_rx_tx,
-                    QuantityFormatter.formatBytes(rx),
-                    QuantityFormatter.formatBytes(tx)
-                )
+                listItem.tunnelTransfer.text = getString(R.string.transfer_rx_tx, QuantityFormatter.formatBytes(rx), QuantityFormatter.formatBytes(tx))
                 listItem.tunnelTransfer.visibility = View.VISIBLE
             } catch (_: Throwable) {
                 listItem.tunnelTransfer.visibility = View.GONE
