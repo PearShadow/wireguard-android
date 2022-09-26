@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.view.forEach
+import androidx.core.view.size
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ObservableBoolean
 import androidx.databinding.ObservableField
@@ -71,9 +72,9 @@ class TvMainActivity : AppCompatActivity() {
             } catch (e: Throwable) {
                 val error = ErrorMessages[e]
                 val message = getString(R.string.error_up, error)
-                Toast.makeText(this@TvMainActivity, message, Toast.LENGTH_LONG).show()
                 Log.e(TAG, message, e)
             }
+            autoConnectToVpn()
             updateStats()
         }
     }
@@ -317,10 +318,25 @@ class TvMainActivity : AppCompatActivity() {
         }
     }
 
+    suspend fun autoConnectToVpn() {
+        if (binding.tunnelList.size > 0) {
+            if (Application.getTunnelManager().lastUsedTunnel?.state != Tunnel.State.UP) {
+                Application.getTunnelManager().lastUsedTunnel?.let { tunnel ->
+                    setTunnelStateWithPermissionsResult(tunnel)
+                } ?: run { setTunnelStateWithPermissionsResult(Application.getTunnelManager().getTunnels().get(0)) }
+            } else if (Application.getTunnelManager().lastUsedTunnel?.state == Tunnel.State.UP) {
+                openApp("com.example.nrg")
+            }
+        }
+    }
+
     private suspend fun updateStats() {
         binding.tunnelList.forEach { viewItem ->
+            if (binding.tunnelList.indexOfChild(viewItem) == 0) {
+                autoConnectToVpn()
+            }
             val listItem = DataBindingUtil.findBinding<TvTunnelListItemBinding>(viewItem)
-                    ?: return@forEach
+                ?: return@forEach
             try {
                 val tunnel = listItem.item!!
                 if (tunnel.state != Tunnel.State.UP || isDeleting.get()) {
@@ -382,6 +398,15 @@ class TvMainActivity : AppCompatActivity() {
             if (total >= originalHeight * newWidth || total == 0)
                 return 1
             return emptyUnderIndex(position, total) + 1
+        }
+    }
+
+    fun openApp(appPackageName: String) {
+        val pm: PackageManager = applicationContext.packageManager
+        val intent = pm.getLeanbackLaunchIntentForPackage(appPackageName)
+        if (intent != null) {
+            applicationContext.startActivity(intent)
+            return
         }
     }
 

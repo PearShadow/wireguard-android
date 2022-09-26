@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.wireguard.android.activity.TvMainActivity
 import com.wireguard.android.backend.WgQuickBackend
 import com.wireguard.android.util.applicationScope
 import kotlinx.coroutines.launch
@@ -20,6 +21,9 @@ class BootShutdownReceiver : BroadcastReceiver() {
             val tunnelManager = Application.getTunnelManager()
             if (Intent.ACTION_BOOT_COMPLETED == action) {
                 Log.i(TAG, "Broadcast receiver restoring state (boot)")
+                val i = Intent(context, TvMainActivity::class.java)
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(i)
                 tunnelManager.restoreState(false)
             } else if (Intent.ACTION_SHUTDOWN == action) {
                 Log.i(TAG, "Broadcast receiver saving state (shutdown)")

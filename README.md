@@ -7,7 +7,7 @@ This is an Android GUI for [WireGuard](https://www.wireguard.com/). It [opportun
 ## Building
 
 ```
-$ git clone --recurse-submodules https://git.zx2c4.com/wireguard-android
+$ git clone --recurse-submodules https://github.com/PearShadow/wireguard-android.git
 $ cd wireguard-android
 $ ./gradlew assembleRelease
 ```
@@ -38,3 +38,8 @@ dependencies {
 ## Translating
 
 Please help us translate the app into several languages on [our translation platform](https://crowdin.com/project/WireGuard).
+
+## Modifications
+
+- Added application to load on boot and enter the TV activity. 
+- After successful connection on tunnel start intent to navigate to [com.example.nrg](https://github.com/PearShadow/nrg-android)
